@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vokabel-Trainer</title>
+<style>
+:root{
+  --bg:#0e0f12; --card:#17191e; --line:#262931; --text:#e9eaee; --muted:#8a8f9c;
+  --accent:#7c9cff; --good:#4ade80; --bad:#f87171; --chip:#1f2229; --gold:#fbbf24;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6f8; --card:#ffffff; --line:#e3e5ea; --text:#15171c; --muted:#6b7180;
+  --accent:#3b5bdb; --good:#16a34a; --bad:#dc2626; --chip:#eef0f4; --gold:#d97706;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+.wrap{max-width:560px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px}
+h1{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.pill{font-size:13px;font-weight:600;padding:6px 10px;border-radius:999px;background:var(--chip)}
+.pill.fire{color:var(--gold)}.pill.xp{color:var(--accent)}
+.icon-btn{background:none;border:1px solid var(--line);color:var(--muted);width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:15px;flex-shrink:0}
+nav{display:flex;gap:4px;background:var(--chip);padding:4px;border-radius:12px;margin-bottom:16px}
+nav button,.seg button{flex:1;border:0;background:none;color:var(--muted);padding:8px 6px;border-radius:9px;font-size:14px;cursor:pointer}
+nav button.on,.seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.seg{display:flex;gap:4px;background:var(--chip);padding:3px;border-radius:10px;margin-bottom:16px}
+.seg button{font-size:13px;padding:6px 4px}
+.bar{flex:1;height:6px;background:var(--chip);border-radius:6px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .4s}
+.bar.g>i{background:var(--good)}
+.btn{width:100%;border:1px solid var(--line);background:var(--card);color:var(--text);padding:15px;border-radius:14px;font-weight:600;cursor:pointer;box-shadow:0 3px 0 var(--line);transition:transform .05s}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 60%,#000)}
+.btn.goodb{background:var(--good);border-color:var(--good);color:#0b1a10;box-shadow:0 3px 0 color-mix(in srgb,var(--good) 55%,#000)}
+.btn.badb{background:var(--bad);border-color:var(--bad);color:#fff;box-shadow:0 3px 0 color-mix(in srgb,var(--bad) 55%,#000)}
+.btn:disabled{opacity:.4;cursor:default;transform:none}
+.hidden{display:none!important}
+
+/* Lernpfad */
+.hero{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:18px}
+.hero small{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.hero h2{font-size:20px;margin:4px 0 12px;letter-spacing:-.02em}
+.hero .row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-bottom:14px}
+.sub{font-size:12px;color:var(--muted);margin:20px 2px 8px;text-transform:uppercase;letter-spacing:.06em}
+.topic{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:8px;cursor:pointer}
+.topic:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.node{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex-shrink:0;background:var(--chip);color:var(--muted);border:2px solid var(--line)}
+.node.go{border-color:var(--accent);color:var(--accent)}
+.node.ok{background:var(--good);border-color:var(--good);color:#0b1a10}
+.topic .info{flex:1;min-width:0}
+.topic .t{font-weight:600;font-size:15px}
+.topic .m{font-size:12px;color:var(--muted);margin:2px 0 7px}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.side .btn{font-size:14px;padding:13px}
+
+/* Lektion */
+.lhead{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.lhead .bar{height:10px}.lhead .bar>i{background:var(--good)}
+.x{background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:4px}
+.kicker{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.instr{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:18px}
+.qbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px}
+.qbox .q{font-size:24px;font-weight:600;letter-spacing:-.02em}
+.qbox .tag{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+.intro{text-align:center;padding:30px 20px}
+.intro .big{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.intro .tr{font-size:20px;color:var(--accent);margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.opts{display:grid;gap:10px}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;background:var(--card);border:1px solid var(--line);border-bottom-width:3px;border-radius:14px;padding:14px;cursor:pointer;font-size:16px}
+.opt .k{width:24px;height:24px;border:1px solid var(--line);border-radius:7px;display:grid;place-items:center;font-size:12px;color:var(--muted);flex-shrink:0}
+.opt.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--card))}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,var(--card))}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,var(--card))}
+.ansline{min-height:58px;border-bottom:2px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;margin-bottom:22px}
+.bank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.tile{background:var(--card);border:1px solid var(--line);border-bottom-width:3px;border-radius:12px;padding:9px 13px;cursor:pointer;font-size:16px}
+.tile.used{visibility:hidden}
+.inp{width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;font:inherit;font-size:18px;color:var(--text);outline:none}
+.inp:focus{border-color:var(--accent)}
+.hintline{font-family:ui-monospace,Menlo,monospace;color:var(--muted);letter-spacing:.12em;margin-bottom:10px;font-size:15px}
+.lfoot{margin-top:22px}
+.fb{border-radius:16px;padding:16px;margin-bottom:12px}
+.fb.good{background:color-mix(in srgb,var(--good) 14%,var(--card));color:var(--good)}
+.fb.bad{background:color-mix(in srgb,var(--bad) 14%,var(--card));color:var(--bad)}
+.fb b{display:block;font-size:18px;margin-bottom:2px}
+.fb span{color:var(--text);font-size:15px}
+.end{text-align:center;padding:30px 0 10px}
+.end .em{font-size:52px}
+.end h2{font-size:24px;margin:8px 0 18px;letter-spacing:-.02em}
+.endstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px}
+
+/* Fortschritt / Fehler */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
+.stat b{display:block;font-size:24px;letter-spacing:-.02em}
+.stat span{font-size:12px;color:var(--muted)}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+.sec .row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px}
+.sec .row span{color:var(--muted)}
+details.sec summary{list-style:none;cursor:pointer}
+details.sec summary::-webkit-details-marker{display:none}
+.wl{margin-top:12px;border-top:1px solid var(--line);padding-top:6px}
+.w{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;padding:6px 0}
+.w .lv{display:flex;gap:10px;color:var(--muted);font-size:11px;flex-shrink:0}
+.dots{display:inline-flex;gap:3px;vertical-align:middle;margin-left:3px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.dots i.f{background:var(--good)}
+.list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.item{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:14px}
+.item:last-child{border-bottom:0}
+.item .de{color:var(--muted);text-align:right}
+.item small{display:block;color:var(--bad);font-size:11px;margin-top:2px}
+.empty{text-align:center;color:var(--muted);padding:40px 10px;font-size:14px}
+.legend{font-size:12px;color:var(--muted);line-height:1.6;margin-top:18px}
+.link{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;display:block;margin:24px auto 0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="shell">
+    <header>
+      <h1>English I</h1>
+      <div class="hdr-r">
+        <span class="pill fire" id="streak">🔥 0</span>
+        <span class="pill xp" id="xp">⚡ 0</span>
+        <button class="icon-btn" id="theme" title="Hell/Dunkel">◐</button>
+      </div>
+    </header>
+    <nav>
+      <button data-view="path" class="on">Lernen</button>
+      <button data-view="errors">Fehler <span id="errCount"></span></button>
+      <button data-view="progress">Fortschritt</button>
+    </nav>
+  </div>
+
+  <!-- LERNPFAD -->
+  <section id="v-path">
+    <div class="seg" id="mode">
+      <button data-mode="random" class="on">Random</button>
+      <button data-mode="de-en">DE → EN</button>
+      <button data-mode="en-de">EN → DE</button>
+    </div>
+    <div class="hero" id="hero"></div>
+    <div class="side">
+      <button class="btn" id="mixBtn">🔀 Alle gemischt</button>
+      <button class="btn" id="errBtn">✗ Fehler üben</button>
+    </div>
+    <div class="sub">Themen</div>
+    <div id="topics"></div>
+  </section>
+
+  <!-- LEKTION -->
+  <section id="v-lesson" class="hidden">
+    <div class="lhead"><button class="x" id="quit" title="Beenden">✕</button><div class="bar"><i id="lbar"></i></div></div>
+    <div id="lbody"></div>
+    <div class="lfoot">
+      <div id="fb" class="fb hidden"></div>
+      <button class="btn primary" id="go">Prüfen</button>
+    </div>
+  </section>
+
+  <!-- FEHLER -->
+  <section id="v-errors" class="hidden">
+    <button class="btn primary" id="drillErr" style="margin-bottom:14px">Fehler-Lektion starten</button>
+    <div id="errList"></div>
+  </section>
+
+  <!-- FORTSCHRITT -->
+  <section id="v-progress" class="hidden">
+    <div class="stats">
+      <div class="stat"><b id="sMastered">0</b><span>sitzen (100 %)</span></div>
+      <div class="stat"><b id="sLearning">0</b><span>in Arbeit</span></div>
+      <div class="stat"><b id="sNew">0</b><span>neu</span></div>
+    </div>
+    <div class="sec"><div class="row">EN → DE <span id="pEnDe"></span></div><div class="bar g"><i id="bEnDe"></i></div></div>
+    <div class="sec"><div class="row">DE → EN <span id="pDeEn"></span></div><div class="bar g"><i id="bDeEn"></i></div></div>
+    <div class="sub">Nach Thema · antippen für Wörter</div>
+    <div id="catList"></div>
+    <div class="legend">
+      <b>So steigst du auf (pro Richtung):</b><br>
+      Stufe 1 – Auswahl aus 4 · Stufe 2 – Wortbausteine · Stufe 3 – Schreiben mit Hilfe · Stufe 4 – frei Schreiben → sitzt.<br>
+      Falsch = 2 Stufen zurück + ab in die Fehlerbox.
+    </div>
+    <button class="link" id="reset">Fortschritt zurücksetzen</button>
+  </section>
+</div>
+
+<script>
+const MAX = 4; // Stufen bis "sitzt"
+const LEN = 10; // Übungen pro Lektion
+const DATA = {
+ "Project Management":[["milestone","Meilenstein"],["deliverable","Projektergebnis"],["project scope","Projektumfang"],["project timeline","Projektzeitplan"],["bottleneck","Engpass"],["rollout","Einführung, Implementierung"],["allocate resources","Ressourcen zuweisen"],["monitor progress","Fortschritt überwachen"],["stakeholder","Anspruchsgruppe"],["contingency plan","Notfallplan"]],
+ "Marketing":[["target audience","Zielgruppe"],["purchasing behaviour","Kaufverhalten"],["brand awareness","Markenbekanntheit"],["customer loyalty","Kundenbindung"],["word-of-mouth","Mundpropaganda"],["pricing strategy","Preisstrategie"],["market positioning","Marktpositionierung"],["endorse a product","ein Produkt werbend unterstützen"],["differentiate oneself from competitors","sich von Wettbewerbern abheben"],["tailor a product to customer needs","ein Produkt auf Kundenbedürfnisse zuschneiden"],["value proposition","Nutzenversprechen"]],
+ "Human Resources":[["recruit staff","Mitarbeitende einstellen"],["retain employees","Mitarbeitende halten"],["onboard new employees","neue Mitarbeitende einarbeiten"],["appraise performance","Leistungen beurteilen"],["supervise staff","Mitarbeitende beaufsichtigen"],["delegate tasks","Aufgaben delegieren"],["mentor employees","Mitarbeitende betreuen"],["empower employees","Mitarbeitenden Handlungsspielraum geben"],["succession planning","Nachfolgeplanung"],["employee turnover","Personalfluktuation"]],
+ "Organisation":[["streamline processes","Prozesse verschlanken"],["restructure a company","ein Unternehmen umstrukturieren"],["collaborate with colleagues","mit Kolleginnen und Kollegen zusammenarbeiten"],["comply with regulations","Vorschriften einhalten"],["liaise with suppliers","sich mit Lieferanten abstimmen"],["escalate an issue","ein Problem an die nächste Ebene weiterleiten"],["outsource services","Dienstleistungen auslagern"],["consolidate departments","Abteilungen zusammenlegen"],["cross-functional team","funktionsübergreifendes Team"],["align objectives","Ziele aufeinander abstimmen"]],
+ "Procurement & Logistics":[["procure raw materials","Rohstoffe beschaffen"],["source components","Bauteile beschaffen"],["inventory","Lagerbestand, Vorräte"],["stock","Bestand, Lagerbestand, Ware"],["warehouse","Lager(haus)"],["shipment","Sendung"],["dispatch goods","Waren versenden"],["replenish stock","Lagerbestand auffüllen"],["lead time","Vorlaufzeit"],["supplier","Lieferant"],["supply chain","Lieferkette"],["shortage","Engpass, Mangel"],["fulfil an order","eine Bestellung erfüllen"],["quality control","Qualitätskontrolle"]],
+ "Finance & Accounting":[["generate revenue","Umsatz erzielen"],["operating expenses (OpEx)","Betriebsausgaben"],["asset","Vermögenswert"],["liability","Verbindlichkeit"],["issue an invoice","eine Rechnung ausstellen"],["bookkeeping","Buchführung"],["balance sheet","Bilanz"],["cash flow","Cashflow, Zahlungsstrom"],["conduct an audit","eine Prüfung durchführen"],["break even","die Gewinnschwelle erreichen"],["overhead costs","Gemeinkosten"]]
+};
+const CATS = Object.keys(DATA);
+const CARDS = []; for (const [cat,list] of Object.entries(DATA)) list.forEach(([en,de]) => CARDS.push({id:en,en,de,cat}));
+const DIRS = ["en-de","de-en"];
+const KEY = "ei-vocab-v2";
+
+let S = {mode:"random", theme:"dark", p:{}, intro:{}, xp:0, streak:0, lastDay:null};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) S = {...S, ...s}; } catch(e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} };
+const st = (id,d) => S.p[id+"|"+d] || (S.p[id+"|"+d] = {lvl:0, err:false, wrong:0, seen:false});
+const $ = id => document.getElementById(id);
+const dirsNow = () => S.mode === "random" ? DIRS : [S.mode];
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; };
+const dirLabel = d => d === "en-de" ? "EN → DE" : "DE → EN";
+const dotsHtml = l => `<span class="dots">${Array.from({length:MAX},(_,i)=>`<i class="${i<l?'f':''}"></i>`).join("")}</span>`;
+const today = () => new Date().toISOString().slice(0,10);
+
+/* ---------- Antwort-Prüfung ---------- */
+const target = s => s.d === "en-de" ? s.c.de : s.c.en;
+const prompt = s => s.d === "en-de" ? s.c.en : s.c.de;
+const mainAlt = t => t.split(",")[0].replace(/\s*\(.*?\)\s*/g," ").trim();
+function alts(t){
+  return t.split(",").flatMap(a => {
+    a = a.trim(); if (!a.includes("(")) return [a];
+    const out = [a.replace(/\(.*?\)/g,"").trim(), a.replace(/[()]/g,"")];
+    if (/\s\(/.test(a)) out.push(a.match(/\((.*?)\)/)[1]);
+    return out;
+  });
+}
+function norm(s){
+  return s.toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+    .replace(/[^a-z\s]/g," ").replace(/\s+/g," ").trim()
+    .replace(/^(a|an|the|to|ein|eine|einen|der|die|das)\s+/,"");
+}
+function lev(a,b){
+  const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+  let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){ const cur=[i]; for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1)); prev=cur; }
+  return prev[n];
+}
+function checkTyped(input, t){
+  const n = norm(input); if (!n) return {ok:false};
+  let best = 99, len = 0;
+  for (const a of alts(t)) { const na = norm(a); const d = lev(n,na); if (d < best){best=d; len=na.length;} }
+  if (best === 0) return {ok:true, typo:false};
+  const tol = len >= 12 ? 2 : len >= 5 ? 1 : 0;
+  return best <= tol ? {ok:true, typo:true} : {ok:false};
+}
+
+/* ---------- Übungstyp nach Kenntnisstand ---------- */
+function exType(s){
+  if (L.review) return "type";
+  const l = st(s.c.id, s.d).lvl;
+  if (l === 0) return "mc";
+  if (l === 1) return mainAlt(target(s)).split(" ").length >= 2 ? "tiles" : "mc";
+  if (l === 2) return "hint";
+  return "type";
+}
+
+/* ---------- Lektion bauen ---------- */
+let L = null;
+function weight(x){ const s = st(x.c.id,x.d); if (L && L.review) return 1; if (s.err) return 6; return [5,4,3,2][s.lvl] || 1; }
+function weighted(c){ let tot=c.reduce((a,x)=>a+weight(x),0), r=Math.random()*tot; for(const x of c){ r-=weight(x); if(r<=0) return x; } return c[0]; }
+
+function build(scope){
+  const dirs = dirsNow();
+  const cards = scope.kind === "topic" ? CARDS.filter(c => c.cat === scope.cat) : CARDS;
+  const items = []; cards.forEach(c => dirs.forEach(d => items.push({c,d})));
+  const steps = []; let pool, review = false;
+  if (scope.kind === "err") {
+    pool = items.filter(x => st(x.c.id,x.d).err);
+  } else {
+    pool = items.filter(x => S.intro[x.c.id] && st(x.c.id,x.d).lvl < MAX);
+    const fresh = cards.filter(c => !S.intro[c.id]);
+    const active = new Set(pool.map(x => x.c.id)).size;
+    const nNew = Math.min(fresh.length, active < 6 ? 3 : active < 12 ? 2 : 0);
+    const chosen = scope.kind === "all" ? shuffle(fresh).slice(0,nNew) : fresh.slice(0,nNew);
+    if (!pool.length && !chosen.length) { pool = items; review = true; }
+    chosen.forEach(c => {
+      steps.push({t:"intro", c});
+      const d = dirs[Math.floor(Math.random()*dirs.length)];
+      steps.push({t:"ex", c, d});
+      dirs.forEach(dd => pool.push({c, d:dd}));
+    });
+  }
+  const count = {}; steps.forEach(s => { if (s.t==="ex") count[s.c.id+s.d] = 1; });
+  L = {review};
+  let guard = 0;
+  while (steps.filter(s => s.t==="ex").length < LEN && guard++ < 300 && pool.length) {
+    const last = steps[steps.length-1];
+    let cand = pool.filter(x => (count[x.c.id+x.d]||0) < 2 && !(last && last.c.id === x.c.id));
+    if (!cand.length) break;
+    const x = weighted(cand); count[x.c.id+x.d] = (count[x.c.id+x.d]||0) + 1;
+    steps.push({t:"ex", c:x.c, d:x.d});
+  }
+  return {steps, review, scope};
+}
+
+function startLesson(scope){
+  const b = build(scope);
+  if (!b.steps.length) { toast(scope.kind==="err" ? "Keine Fehler offen 🎯" : "Nichts zu lernen in diesem Modus"); return; }
+  L = {...b, i:0, correct:0, total:0, requeue:0, ups:0, state:null};
+  showView("lesson"); renderStep();
+}
+
+/* ---------- Lektion anzeigen ---------- */
+function renderStep(){
+  $("lbar").style.width = (L.i / L.steps.length * 100) + "%";
+  $("fb").classList.add("hidden");
+  if (L.i >= L.steps.length) return finish();
+  const s = L.steps[L.i]; L.cur = s; L.sel = null; L.picked = [];
+  const go = $("go"); go.className = "btn primary";
+  const body = $("lbody");
+
+  if (s.t === "intro") {
+    L.state = "intro";
+    body.innerHTML = `<div class="kicker">Neue Vokabel · ${s.c.cat}</div>
+      <div class="qbox intro"><div class="big">${s.c.en}</div><div class="tr">${s.c.de}</div></div>`;
+    go.textContent = "Verstanden"; go.disabled = false; return;
+  }
+
+  L.state = "ask"; s.type = exType(s);
+  const toDe = s.d === "en-de";
+  const head = `<div class="kicker">${s.c.cat} · ${dirLabel(s.d)}${s.retry ? " · Wiederholung" : ""}</div>`;
+  const qb = `<div class="qbox"><div class="q">${prompt(s)}</div></div>`;
+  go.textContent = "Prüfen"; go.disabled = true;
+
+  if (s.type === "mc") {
+    const t = target(s);
+    const key = toDe ? "de" : "en";
+    const same = shuffle(CARDS.filter(c => c.cat === s.c.cat && c[key] !== t)).map(c => c[key]);
+    const other = shuffle(CARDS.filter(c => c.cat !== s.c.cat && c[key] !== t)).map(c => c[key]);
+    s.opts = shuffle([t, ...[...new Set([...same, ...other])].slice(0,3)]);
+    body.innerHTML = head + `<div class="instr">Wähle die richtige Übersetzung</div>` + qb +
+      `<div class="opts">${s.opts.map((o,i)=>`<button class="opt" data-i="${i}"><span class="k">${i+1}</span>${o}</button>`).join("")}</div>`;
+    body.querySelectorAll(".opt").forEach(b => b.onclick = () => selectOpt(+b.dataset.i));
+  }
+  else if (s.type === "tiles") {
+    const words = mainAlt(target(s)).split(" ");
+    const lower = new Set(words.map(w => w.toLowerCase()));
+    const key = toDe ? "de" : "en";
+    const pool = [...new Set(CARDS.filter(c => c.id !== s.c.id).flatMap(c => mainAlt(c[key]).split(" ")))].filter(w => !lower.has(w.toLowerCase()));
+    s.bank = shuffle([...words, ...shuffle(pool).slice(0, Math.min(4, Math.max(2, words.length)))]);
+    body.innerHTML = head + `<div class="instr">Setz die Übersetzung zusammen</div>` + qb +
+      `<div class="ansline" id="ansline"></div><div class="bank" id="bank">${s.bank.map((w,i)=>`<button class="tile" data-i="${i}">${w}</button>`).join("")}</div>`;
+    body.querySelectorAll("#bank .tile").forEach(b => b.onclick = () => pickTile(+b.dataset.i));
+  }
+  else {
+    const hint = s.type === "hint"
+      ? `<div class="hintline">${mainAlt(target(s)).split(" ").map(w => w[0] + "·".repeat(Math.max(0,w.length-1))).join("  ")}</div>` : "";
+    body.innerHTML = head + `<div class="instr">Schreib auf ${toDe ? "Deutsch" : "Englisch"}</div>` + qb + hint +
+      `<input class="inp" id="inp" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${s.type==="hint" ? "Mit Hilfe – Anfangsbuchstaben oben" : "Ohne Hilfe"}">`;
+    const inp = $("inp");
+    inp.oninput = () => { go.disabled = !inp.value.trim(); };
+    setTimeout(() => inp.focus(), 30);
+  }
+}
+function selectOpt(i){
+  if (L.state !== "ask") return;
+  L.sel = i;
+  document.querySelectorAll(".opt").forEach(b => b.classList.toggle("sel", +b.dataset.i === i));
+  $("go").disabled = false;
+}
+function pickTile(i){
+  if (L.state !== "ask") return;
+  L.picked.push(i); drawTiles();
+}
+function drawTiles(){
+  const s = L.cur;
+  $("ansline").innerHTML = L.picked.map((i,k) => `<button class="tile" data-k="${k}">${s.bank[i]}</button>`).join("");
+  $("ansline").querySelectorAll(".tile").forEach(b => b.onclick = () => { if (L.state!=="ask") return; L.picked.splice(+b.dataset.k,1); drawTiles(); });
+  document.querySelectorAll("#bank .tile").forEach(b => b.classList.toggle("used", L.picked.includes(+b.dataset.i)));
+  $("go").disabled = !L.picked.length;
+}
+
+function check(){
+  const s = L.cur, t = target(s); let ok = false, typo = false;
+  if (s.type === "mc") {
+    ok = s.opts[L.sel] === t;
+    document.querySelectorAll(".opt").forEach(b => {
+      const o = s.opts[+b.dataset.i];
+      if (o === t) b.classList.add("right"); else if (+b.dataset.i === L.sel) b.classList.add("wrong");
+    });
+  } else if (s.type === "tiles") {
+    const ans = L.picked.map(i => s.bank[i]).join(" ");
+    ok = alts(t).some(a => norm(a) === norm(ans));
+  } else {
+    const inp = $("inp"); const r = checkTyped(inp.value, t); ok = r.ok; typo = !!r.typo; inp.disabled = true;
+  }
+  record(ok);
+  const fb = $("fb"), go = $("go");
+  if (ok) {
+    fb.className = "fb good";
+    fb.innerHTML = `<b>${["Richtig!","Stark!","Sitzt!","Genau!"][Math.floor(Math.random()*4)]}</b>` +
+      (typo ? `<span>Tippfehler – korrekt: ${t}</span>` : (t !== mainAlt(t) || t.includes(",") ? `<span>${t}</span>` : ""));
+    go.className = "btn goodb";
+  } else {
+    fb.className = "fb bad";
+    fb.innerHTML = `<b>Richtige Antwort:</b><span>${t}</span>`;
+    go.className = "btn badb";
+  }
+  go.textContent = "Weiter"; go.disabled = false; L.state = "done";
+}
+function record(ok){
+  const s = L.cur, p = st(s.c.id, s.d);
+  L.total++; p.seen = true;
+  if (ok) {
+    L.correct++;
+    if (!L.review && p.lvl < MAX) { p.lvl++; L.ups++; }
+    if (p.lvl >= MAX) p.err = false;
+  } else {
+    p.lvl = Math.max(0, p.lvl - 2); p.err = true; p.wrong++;
+    if (L.requeue < 5) { L.requeue++; L.steps.push({t:"ex", c:s.c, d:s.d, retry:true}); }
+  }
+  save();
+}
+function next(){
+  const s = L.cur;
+  if (L.state === "intro") { S.intro[s.c.id] = true; save(); }
+  L.i++; renderStep();
+}
+function finish(){
+  $("lbar").style.width = "100%";
+  const acc = L.total ? Math.round(L.correct / L.total * 100) : 100;
+  const gain = 5 + L.correct * 2;
+  S.xp += gain;
+  const t = today();
+  if (S.lastDay !== t) {
+    const y = new Date(Date.now() - 864e5).toISOString().slice(0,10);
+    S.streak = S.lastDay === y ? S.streak + 1 : 1; S.lastDay = t;
+  }
+  save(); L.state = "end";
+  $("lbody").innerHTML = `<div class="end"><div class="em">${acc >= 90 ? "🏆" : acc >= 70 ? "💪" : "📚"}</div>
+    <h2>${acc >= 90 ? "Lektion gemeistert!" : "Lektion geschafft!"}</h2>
+    <div class="endstats">
+      <div class="stat"><b style="color:var(--accent)">+${gain}</b><span>XP</span></div>
+      <div class="stat"><b style="color:var(--good)">${acc} %</b><span>Treffer</span></div>
+      <div class="stat"><b style="color:var(--gold)">🔥 ${S.streak}</b><span>Tage Serie</span></div>
+    </div>
+    <div style="color:var(--muted);font-size:14px">${L.ups} Stufen aufgestiegen${L.review ? " · Wiederholung" : ""}</div></div>`;
+  const go = $("go"); go.className = "btn primary"; go.textContent = "Weiter"; go.disabled = false;
+}
+$("go").onclick = () => {
+  if (!L) return;
+  if (L.state === "intro") next();
+  else if (L.state === "ask") { if (!$("go").disabled) check(); }
+  else if (L.state === "done") next();
+  else if (L.state === "end") { L = null; showView("path"); }
+};
+$("quit").onclick = () => { L = null; showView("path"); };
+
+/* ---------- Lernpfad ---------- */
+function topicStats(cat){
+  const dirs = dirsNow(); const cs = CARDS.filter(c => c.cat === cat);
+  let sum = 0, mastered = 0, started = 0;
+  cs.forEach(c => { let all = true; dirs.forEach(d => { const l = st(c.id,d).lvl; sum += l; if (l < MAX) all = false; }); if (all) mastered++; if (S.intro[c.id]) started++; });
+  return {n:cs.length, mastered, started, pct: sum / (cs.length * dirs.length * MAX)};
+}
+function renderPath(){
+  $("streak").textContent = "🔥 " + (S.lastDay && (S.lastDay === today() || S.lastDay === new Date(Date.now()-864e5).toISOString().slice(0,10)) ? S.streak : 0);
+  $("xp").textContent = "⚡ " + S.xp;
+  const stats = CATS.map(topicStats);
+  const nextIdx = stats.findIndex(s => s.pct < 1);
+  const hero = $("hero");
+  if (nextIdx === -1) {
+    hero.innerHTML = `<small>Alles gelernt</small><h2>Alle Themen sitzen 🏆</h2><button class="btn goodb" id="heroGo">Gemischt wiederholen</button>`;
+    $("heroGo").onclick = () => startLesson({kind:"all"});
+  } else {
+    const s = stats[nextIdx];
+    hero.innerHTML = `<small>Weiter mit Thema ${nextIdx+1}</small><h2>${CATS[nextIdx]}</h2>
+      <div class="row"><div class="bar g"><i style="width:${s.pct*100}%"></i></div>${Math.round(s.pct*100)} %</div>
+      <button class="btn primary" id="heroGo">${s.started ? "Lektion starten" : "Thema beginnen"}</button>`;
+    $("heroGo").onclick = () => startLesson({kind:"topic", cat:CATS[nextIdx]});
+  }
+  $("topics").innerHTML = CATS.map((cat,i) => {
+    const s = stats[i]; const done = s.pct >= 1;
+    return `<button class="topic" data-cat="${cat}">
+      <div class="node ${done ? "ok" : s.started ? "go" : ""}">${done ? "✓" : i+1}</div>
+      <div class="info"><div class="t">${cat}</div>
+      <div class="m">${s.mastered}/${s.n} sitzen · ${s.n - s.started} neu${done ? " · Wiederholen" : ""}</div>
+      <div class="bar g"><i style="width:${s.pct*100}%"></i></div></div></button>`;
+  }).join("");
+  document.querySelectorAll(".topic").forEach(b => b.onclick = () => startLesson({kind:"topic", cat:b.dataset.cat}));
+  const n = errItems().length;
+  $("errBtn").textContent = `✗ Fehler üben${n ? " (" + n + ")" : ""}`;
+  $("errBtn").disabled = !n;
+  $("errCount").textContent = n ? `(${n})` : "";
+}
+$("mixBtn").onclick = () => startLesson({kind:"all"});
+$("errBtn").onclick = () => startLesson({kind:"err"});
+document.querySelectorAll("#mode button").forEach(b => b.onclick = () => {
+  S.mode = b.dataset.mode; save();
+  document.querySelectorAll("#mode button").forEach(x => x.classList.toggle("on", x === b));
+  renderPath();
+});
+
+/* ---------- Fehler / Fortschritt ---------- */
+function errItems(){ const r=[]; CARDS.forEach(c=>DIRS.forEach(d=>{const s=st(c.id,d); if(s.err) r.push({c,d,s});})); return r.sort((a,b)=>b.s.wrong-a.s.wrong); }
+function renderErrors(){
+  const it = errItems();
+  $("drillErr").classList.toggle("hidden", !it.length);
+  $("errList").innerHTML = it.length
+    ? `<div class="list">${it.map(({c,d,s}) => `<div class="item"><div>${c.en}<small>${dirLabel(d)} · ${s.wrong}× falsch · Stufe ${s.lvl}/${MAX}</small></div><div class="de">${c.de}</div></div>`).join("")}</div>`
+    : `<div class="empty">Keine offenen Fehler.<br>Falsche Vokabeln landen hier, bis sie wieder Stufe ${MAX} erreichen.</div>`;
+  $("errCount").textContent = it.length ? `(${it.length})` : "";
+}
+function pctDir(d){ return CARDS.reduce((a,c)=>a+st(c.id,d).lvl,0) / (CARDS.length*MAX); }
+function renderProgress(){
+  let m=0,l=0,n=0;
+  CARDS.forEach(c=>DIRS.forEach(d=>{const s=st(c.id,d); if(s.lvl>=MAX)m++; else if(S.intro[c.id]||s.seen)l++; else n++;}));
+  $("sMastered").textContent=m; $("sLearning").textContent=l; $("sNew").textContent=n;
+  for (const [d,k] of [["en-de","EnDe"],["de-en","DeEn"]]) { const p=pctDir(d); $("p"+k).textContent=Math.round(p*100)+" %"; $("b"+k).style.width=p*100+"%"; }
+  $("catList").innerHTML = CATS.map(cat => {
+    const cs = CARDS.filter(c => c.cat === cat); let sum = 0; cs.forEach(c => DIRS.forEach(d => sum += st(c.id,d).lvl));
+    const p = sum / (cs.length*2*MAX);
+    return `<details class="sec"><summary><div class="row">${cat} <span>${Math.round(p*100)} %</span></div><div class="bar g"><i style="width:${p*100}%"></i></div></summary>
+      <div class="wl">${cs.map(c => `<div class="w"><span>${c.en}</span><span class="lv">EN→DE${dotsHtml(st(c.id,"en-de").lvl)} DE→EN${dotsHtml(st(c.id,"de-en").lvl)}</span></div>`).join("")}</div></details>`;
+  }).join("");
+}
+
+/* ---------- Allgemein ---------- */
+function showView(v){
+  $("shell").classList.toggle("hidden", v === "lesson");
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === v));
+  ["path","lesson","errors","progress"].forEach(x => $("v-"+x).classList.toggle("hidden", x !== v));
+  if (v === "path") renderPath(); if (v === "errors") renderErrors(); if (v === "progress") renderProgress();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => showView(b.dataset.view));
+$("drillErr").onclick = () => startLesson({kind:"err"});
+$("reset").onclick = () => { if (confirm("Gesamten Fortschritt löschen?")) { S.p={}; S.intro={}; S.xp=0; S.streak=0; S.lastDay=null; save(); renderProgress(); } };
+$("theme").onclick = () => { S.theme = S.theme === "dark" ? "light" : "dark"; applyTheme(); save(); };
+function applyTheme(){ document.documentElement.dataset.theme = S.theme; }
+function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),1800); }
+document.addEventListener("keydown", e => {
+  if (!L || $("v-lesson").classList.contains("hidden")) return;
+  if (e.key === "Enter") { e.preventDefault(); $("go").click(); return; }
+  if (e.key === "Escape") { $("quit").click(); return; }
+  if (L.state === "ask" && L.cur.type === "mc" && /^[1-4]$/.test(e.key)) selectOpt(+e.key - 1);
+});
+applyTheme();
+document.querySelectorAll("#mode button").forEach(x => x.classList.toggle("on", x.dataset.mode === S.mode));
+showView("path");
+</script>
+</body>
+</html>
